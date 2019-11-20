@@ -1,0 +1,73 @@
+
+service: iam-rotate-credentials
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+
+provider:
+  name: aws
+  runtime: python3.7
+  timeout: 300
+  memorySize: 128
+  logRetentionInDays: 7
+  region: ${opt:region, 'eu-west-1'}
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-plugin-log-retention
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+package:
+  exclude:
+    - node_modules/**
+    - samples/**
+    - bin/**
+    - include/**
+    - lib/**
+    - .vscode/
+    - env/
+    - .gitignore
+
+functions:
+  iam-rotate-credential:
+    name: iam-rotate-credentials
+    description: feature allowing the current list of iam credentials as they become obsolete
+    handler: handler.main
+    iamRoleStatementsName: iam-rotate-credentials-role
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - ses:ListIdentities
+          - ses:SendEmail
+          - ses:SendRawEmail
+          - ses:SendTemplatedEmail
+          - ses:GetIdentityVerificationAttributes
+        Resource: "*"
+      - Effect: Allow
+        Action:
+          - iam:CreateAccessKey
+          - iam:DeleteAccessKey
+          - iam:GetLoginProfile
+          - iam:GetUser
+          - iam:ListAccessKeys
+          - iam:ListUsers
+          - iam:UpdateLoginProfile
+          - iam:ListUserTags
+        Resource: "*"  
+      - Effect: Allow
+        Action:
+          - sns:Publish
+        Resource: "*"
+    events:
+      - schedule:
+          name: iam-rotate-credentials-schedule
+          rate: rate(24 hours)
+          enabled: true
+    environment:
+      AWS_LOGIN_PROFILE_TIME_LIMIT: 60
+      AWS_LOGIN_PROFILE_PASSWORD_RESET_REQUIRED: true
+      AWS_CLI_TIME_LIMIT: 60
+      AWS_SES_EMAIL_FROM: "<your email used to send credentials changes>"
+      AWS_SNS_RESULT_ARN: "<your sns topic arn>"
+      

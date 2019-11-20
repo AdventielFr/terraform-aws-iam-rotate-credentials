@@ -1,0 +1,21 @@
+# Compiled files
+*.tfstate
+*.tfstate.backup
+
+# Module directory
+.terraform/
+
+# Jetbrains
+.idea/
+
+# servelesss
+node_modules
+include
+bin
+.serverless
+lib
+.DS_Store
+
+env/
+
+package-lock.json
