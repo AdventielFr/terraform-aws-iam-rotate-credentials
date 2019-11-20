@@ -56,14 +56,16 @@ This module create:
 
 ## III - Usage
 
-`````
+````shell
 module "iam_rotate_credentials"
 {
   source = "git::https://github.com/AdventielFr/terraform-aws-iam-rotate-credentials.git?ref=1.0.0"
   
-  aws_region = "eu-west-3"
-  aws_ses_region = "eu-west-1"
-  cloudwatch_log_retention = 10
-  password_reset_required = true
+  aws_region                                = "eu-west-1"
+  cloudwatch_log_retention                  = 10
+  aws_cli_time_limit                        = 20
+  aws_login_profile_time_limit              = 15
+  aws_login_profile_password_reset_required = true
+  aws_ses_email_from                        = "john.doe@nobody.com
 }
 `````
