@@ -43,3 +43,16 @@ variable "aws_cli_time_limit" {
   type        = number
   default     = 60
 }
+
+variable "tags" {
+  description = "The tags of all resources created"
+  type        = map
+  default     = {}
+}
+
+variable "credentials_sended_by" {
+  description = "The sender of renewal credentials emails"
+  type        = string
+  default     = "ops team"
+}
+

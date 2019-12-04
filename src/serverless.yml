@@ -18,6 +18,7 @@ plugins:
   - serverless-plugin-log-retention
   - serverless-python-requirements
   - serverless-pseudo-parameters
+
 package:
   exclude:
     - node_modules/**
@@ -30,20 +31,14 @@ package:
     - .gitignore
 
 functions:
-  iam-rotate-credential:
-    name: iam-rotate-credentials
-    description: feature allowing the current list of iam credentials as they become obsolete
-    handler: handler.main
-    iamRoleStatementsName: iam-rotate-credentials-role
+  findUsersToRefreshHandler:
+    name: findUsersToRefreshHandler
+    timeout: 300
+    memorySize: 120
+    description: research the uses for which it is necessary to refresh their credentials
+    handler: lambdafindUsersToRefreshHandler.main
+    iamRoleStatementsName: find-users-to-update-iam-credentials-role
     iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - ses:ListIdentities
-          - ses:SendEmail
-          - ses:SendRawEmail
-          - ses:SendTemplatedEmail
-          - ses:GetIdentityVerificationAttributes
-        Resource: "*"
       - Effect: Allow
         Action:
           - iam:CreateAccessKey
