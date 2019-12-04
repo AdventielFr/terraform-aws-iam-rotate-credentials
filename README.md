@@ -1,13 +1,9 @@
-<p>
-<center>
 <table>
   <tr>
     <td style="text-align: center; vertical-align: middle;"><img src="_docs/logo_aws.jpg"/></td>
     <td style="text-align: center; vertical-align: middle;"><img src="_docs/logo_adv.jpg"/></td>
   </tr> 
 <table>
-</center>
-</p>
 
 # AWS IAM rotate credential
 
@@ -71,8 +67,22 @@ Once the tags is affixed to the user, the email or email domain must be register
 | cloudwatch\_log\_retention | The cloudwatch log retention ( default 7 days ). | number | 7 |
 | credentials\_sended\_by | The sender of renewal credentials emails | string | "ops team" |
 | function\_timeout | The amount of time your Lambda Functions has to run in seconds. | number | 300 |
+| kms\_ciphertext | Data to be encrypted | string | "" |
 | scan\_alarm\_clock | The time between two scan to search for expired certificates ( in minutes default 1440 = 1 days) | number | 1440 |
 | tags | The tags of all resources created | map | {} |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| kms\_ciphertext | The Secret used to encrypt the data |
+| lambda\_find\_users\_to\_refresh\_arn | The Lambda ARN of Find users to update IAM credentials lambda |
+| lambda\_update\_iam\_credentials\_for\_user\_arn | The Lambda ARN of Update IAM credentials lambda |
+| sns\_iam\_rotate\_credentials\_result\_arn | The SNS result ARN of topic for result IAM rotate Credential lambdas execution |
+| sqs\_update\_iam\_credentials\_for\_user\_arn | The ARN of SQS request IAM users credentials |
+| sqs\_update\_iam\_credentials\_for\_user\_dead\_letter\_arn | The ARN of SQS request IAM users credentials ( dead letter ) |
+| sqs\_update\_iam\_credentials\_for\_user\_dead\_letter\_id | The URL of SQS request IAM users credentials ( dead letter ) |
+| sqs\_update\_iam\_credentials\_for\_user\_id | The URL of SQS request IAM users credentials |
 
 ## III - Usage
 
@@ -88,6 +98,7 @@ module "iam_rotate_credentials"
   aws_login_profile_password_reset_required = true
   aws_ses_email_from                        = "no-reply@nobody.com"
   credentials_sended_by                     = "ops team"
+  kms_ciphertext                            = "my-super-secret"
   tags = {
     Owner = "Acme"
     Department = "ops"

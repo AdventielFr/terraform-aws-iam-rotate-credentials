@@ -18,7 +18,6 @@ plugins:
   - serverless-plugin-log-retention
   - serverless-python-requirements
   - serverless-pseudo-parameters
-
 package:
   exclude:
     - node_modules/**

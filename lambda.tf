@@ -7,6 +7,7 @@ resource "aws_lambda_function" "find_users_to_refresh" {
   filename      = "${path.module}/iam-rotate-credentials.zip"
   handler       = "lambdaFindUsersToRefreshHandler.main"
   role          = aws_iam_role.find_users_to_refresh.arn
+  kms_key_arn   = aws_kms_key.iam_rotate_credentials.arn
 
   environment {
     variables = {
@@ -34,6 +35,7 @@ resource "aws_lambda_function" "update_iam_credentials_for_user" {
   filename      = "${path.module}/iam-rotate-credentials.zip"
   handler       = "lambdaUpdateIamCredentialsForUserHandler.main"
   role          = aws_iam_role.update_iam_credentials_for_user.arn
+  kms_key_arn   = aws_kms_key.iam_rotate_credentials.arn
 
   environment {
     variables = {
@@ -67,7 +69,7 @@ resource "aws_lambda_event_source_mapping" "iam_rotate_credentials_request" {
   function_name    = aws_lambda_function.update_iam_credentials_for_user.arn
   enabled          = true
   depends_on = [
-    "aws_sqs_queue.update_iam_credentials_for_user",
-    "aws_lambda_function.update_iam_credentials_for_user"
+    aws_sqs_queue.update_iam_credentials_for_user,
+    aws_lambda_function.update_iam_credentials_for_user
   ]
 }

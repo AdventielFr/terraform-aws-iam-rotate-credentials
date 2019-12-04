@@ -20,6 +20,8 @@ def main(event, context):
             common.logger.info(f"Process request for user {request.user_name} ...")
             if common.is_obsolete_request(ses_client, iam_client, request):
                 publish_request(request)
+            else:
+                common.logger.info(f"No change credentials for the user {request.user_name}")
 
     except Exception as e:
         stack_trace = traceback.format_exc()
@@ -32,7 +34,7 @@ def publish_request(request):
                 QueueUrl = os.environ.get('AWS_SQS_REQUEST_URL'),
                 MessageBody = json.dumps(request.__dict__)
             )
-    common.logger.info(f"Sends a credentials renewal request to the user {request.user_name}")
+    common.logger.info(f"Sends a credentials renewal request for the user {request.user_name}")
 
 def find_user_tag(user_name, tag_key, marker=None):
     response = None

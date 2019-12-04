@@ -204,5 +204,5 @@ modules = list(MarkdownPP.modules)
 MarkdownPP.MarkdownPP(input=mdpp, output=md, modules=modules)
 mdpp.close()
 md.close()
-os.remove(os.path.dirname(os.path.realpath(__file__))+'/data.md')
+#os.remove(os.path.dirname(os.path.realpath(__file__))+'/data.md')
 

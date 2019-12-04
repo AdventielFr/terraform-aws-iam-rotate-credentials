@@ -52,7 +52,7 @@ def main(event, context):
 
 def extract_request_from_record(record):
     """extract refresh credential request from record"""
-    payload = json.loads(record['Body'])
+    payload = json.loads(record['body'])
     return RefreshCredentialRequest(**payload)
 
 def update_login_profile(request, login_profile_info):
@@ -94,12 +94,13 @@ def try_send_email(request, login_profile_info, access_key_infos):
             message += "\n"
     if access_key_infos and len(access_key_infos)>0 : 
         for key in access_key_infos:
-            message += f'Your new Command LIne Access:\n'
+            message += 'Your new Command LIne Access:\n'
             message += f"\tAccess Key: {key.id}\n"
             message += f"\tSecret Key: {key.secret}\n"
     message += "\n"
     if 'CREDENTIALS_SENDED_BY' in os.environ:
-        message += f"by {os.environ.get("CREDENTIALS_SENDED_BY")}.\n"
+        credentials_sended_by = os.environ.get("CREDENTIALS_SENDED_BY")
+        message += f"by {credentials_sended_by}.\n"
     ses_client.send_email(
         Source = os.environ.get('AWS_SES_EMAIL_FROM'),
         Destination = {'ToAddresses': [request.email]},

@@ -1,13 +1,9 @@
-<p>
-<center>
 <table>
   <tr>
     <td style="text-align: center; vertical-align: middle;"><img src="_docs/logo_aws.jpg"/></td>
     <td style="text-align: center; vertical-align: middle;"><img src="_docs/logo_adv.jpg"/></td>
   </tr> 
 <table>
-</center>
-</p>
 
 # AWS IAM rotate credential
 

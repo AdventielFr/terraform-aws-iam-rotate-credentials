@@ -56,3 +56,8 @@ variable "credentials_sended_by" {
   default     = "ops team"
 }
 
+variable "kms_ciphertext" {
+  description = "Data to be encrypted"
+  type  = string
+  default = ""
+}
