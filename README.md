@@ -1,46 +1,19 @@
+<p>
+<center>
 <table>
   <tr>
     <td style="text-align: center; vertical-align: middle;"><img src="_docs/logo_aws.jpg"/></td>
     <td style="text-align: center; vertical-align: middle;"><img src="_docs/logo_adv.jpg"/></td>
   </tr> 
 <table>
+</center>
+</p>
 
 # AWS IAM rotate credential
 
 This terraform module aims to create a lambda function that refreshes the IAM credentials (login profile / access keys) as they become obsolete
 
-## I - Infrastructure components
-
 ![alt text](_docs/diagram.png)
-
-In order to activate the rotation feature it is necessary to do the following actions before the terraform deployment
-
-### I.1 - Add tag on user
-
-To identify an AWS user as a user with ID rotation, it is necessary to add a tag to this user. This tag must be **IamRotateCredentialEmail**. It must contain the email that will receive the new credentials.
-
-![alt text](_docs/tag.png)
-
-It is possible to configure per user the maximum duration for console access or for command line access
-
-| Name | Description | Required | 
-|------|-------------|:----:|
-| IamRotateCredentials:Email | Email of the user who will receive the new credentials | yes | 
-| IamRotateCredentials:LoginProfileTimeLimit | Maximum duration for an access with login profile (expressed in days). | no |
-| IamRotateCredentials:CliTimeLimit | Maximum duration for an access with AWS CLI (expressed in days). | no |
-
-
-### I.2 - Register Email/Domain on AWS SES
-
-Once the tags is affixed to the user, the email or email domain must be registered in the AWS SES sevice. Otherwise no mails will be sent from AWS.
-
-### I.2.1 - Register Email
-
-![alt text](_docs/ses.png)
-
-### I.2.2 - Register Domain
-
-![alt text](_docs/ses2.png)
 
 ## I - Infrastructure components
 
@@ -57,6 +30,34 @@ This module create:
 - 1 SNS topics for result of lambda function execution : **iam-rotate-credentials-result**
 
 - 2 SQS queues: **iam-rotate-credentials-update-iam-credentials-request**, **iam-rotate-credentials-update-iam-credentials-request-dead-letter**
+
+In order to activate the rotation feature it is necessary to do the following actions before the terraform deployment
+
+### I.1 - Add tag on user
+
+To identify an AWS user as a user with ID rotation, it is necessary to add a tag to this user. This tag must be **IamRotateCredentialEmail**. It must contain the email that will receive the new credentials.
+
+![alt text](_docs/tag.png)
+
+It is possible to configure per user the maximum duration for console access or for command line access
+
+| Name | Description | Required |
+|------|-------------|:----:|
+| IamRotateCredentials:Email | Email of the user who will receive the new credentials | yes |
+| IamRotateCredentials:LoginProfileTimeLimit | Maximum duration for an access with login profile (expressed in days). | no |
+| IamRotateCredentials:CliTimeLimit | Maximum duration for an access with AWS CLI (expressed in days). | no |
+
+### I.2 - Register Email/Domain on AWS SES
+
+Once the tags is affixed to the user, the email or email domain must be registered in the AWS SES sevice. Otherwise no mails will be sent from AWS.
+
+### I.2.1 - Register Email
+
+![alt text](_docs/ses.png)
+
+### I.2.2 - Register Domain
+
+![alt text](_docs/ses2.png)
 
 ## II - Inputs / Outputs
 
@@ -94,4 +95,4 @@ module "iam_rotate_credentials"
     Department = "ops"
   }
 }
-`````
+````
