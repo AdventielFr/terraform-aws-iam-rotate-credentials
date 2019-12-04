@@ -31,11 +31,9 @@ This module create:
 
 - 2 SQS queues: **iam-rotate-credentials-update-iam-credentials-request**, **iam-rotate-credentials-update-iam-credentials-request-dead-letter**
 
-In order to activate the rotation feature it is necessary to do the following actions before the terraform deployment
-
 ### I.1 - Add tag on user
 
-To identify an AWS user as a user with ID rotation, it is necessary to add a tag to this user. This tag must be **IamRotateCredentialEmail**. It must contain the email that will receive the new credentials.
+To identify an AWS user as a user with ID rotation, it is necessary to add a tag to this user. This tag must be **IamRotateCredentials:Email**. It must contain the email that will receive the new credentials.
 
 ![alt text](_docs/tag.png)
 
