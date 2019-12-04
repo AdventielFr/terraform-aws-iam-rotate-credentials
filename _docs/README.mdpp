@@ -75,7 +75,7 @@ module "iam_rotate_credentials"
   aws_login_profile_password_reset_required = true
   aws_ses_email_from                        = "no-reply@nobody.com"
   credentials_sended_by                     = "ops team"
-  tag = {
+  tags = {
     Owner = "Acme"
     Department = "ops"
   }
