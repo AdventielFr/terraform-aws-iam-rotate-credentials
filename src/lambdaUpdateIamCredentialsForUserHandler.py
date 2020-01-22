@@ -57,6 +57,7 @@ def extract_request_from_record(record):
     request.email = common.find_user_tag(request.user_name)
     if not request.email:
         raise ValueError(f"tag IamRotateCredentials:Email not found for user {request.user_name}")
+    return request
 
 def update_login_profile(request, login_profile_info):
     """update login profile password"""
