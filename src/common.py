@@ -12,7 +12,7 @@ class RefreshCredentialRequest(object):
         self.cli_time_limit = None
         self.login_profile_time_limit = None
         self.__dict__.update(kwargs)
-        if not self.create_date:
+        if not self.user_name:
             raise ValueError("user_name is required")
         if not self.force:
             if not self.cli_time_limit:
