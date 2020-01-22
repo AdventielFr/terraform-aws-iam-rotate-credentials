@@ -169,7 +169,7 @@ class Common(object):
         except iam_client.exceptions.NoSuchEntityException:
             return None
 
-    def find_user_tag(self, user_name, tag_key, marker=None):
+    def find_user_tag(self, iam_client, user_name, tag_key, marker=None):
         response = None
         if not marker:
             response = iam_client.list_user_tags(UserName=user_name)
