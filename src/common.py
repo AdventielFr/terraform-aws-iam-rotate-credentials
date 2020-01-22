@@ -7,16 +7,27 @@ import datetime
 class RefreshCredentialRequest(object):
     def __init__(self, **kwargs):
         self.user_name = None
-        self.email = None
         self.force = False
+        self.email = None
         self.cli_time_limit = None
         self.login_profile_time_limit = None
         self.__dict__.update(kwargs)
+        if not self.user_name:
+            raise ValueError("user_name is required")
+        if not self.force:
+            if not self.cli_time_limit:
+                raise ValueError("cli_time_limit is required")
+            if not self.login_profile_time_limit:
+                raise ValueError("login_profile_time_limit is required")        
 
 class AuditableInfo(object):
     def __init__(self, create_date, request):
-        self.create_date = create_date
         self.request = request
+        self.create_date = create_date
+        if not create_date:
+            raise ValueError("create_date is required")
+        if not request:
+            raise ValueError("request is required")
 
 class LoginProfileInfo(AuditableInfo):
     def __init__(self, create_date, request):
@@ -24,12 +35,10 @@ class LoginProfileInfo(AuditableInfo):
         self.password = None
 
     def is_obsolete(self):
-        if bool(self.request.force):
+        if self.request.force:
             return True
-        if not self.create_date or not self.request or not self.request.login_profile_time_limit:
-            return False
-        limit_date = self.create_date + datetime.timedelta(days=int(self.request.login_profile_time_limit))
-        return datetime.datetime.now() > limit_date.replace(tzinfo=None)
+        limit_date = (self.create_date + datetime.timedelta(days=int(self.request.login_profile_time_limit))).date()
+        return datetime.date.today() > limit_date
 
 class AccessKeyInfo(AuditableInfo):
     def __init__(self, id, create_date, request):
@@ -38,13 +47,11 @@ class AccessKeyInfo(AuditableInfo):
         self.secret = None
 
     def is_obsolete(self):
-        if bool(self.request.force):
+        if self.request.force:
             return True
-        if not self.create_date or not self.request or not self.request.cli_time_limit:
-            return False
-        limit_date = self.create_date + datetime.timedelta(days=int(self.request.cli_time_limit))
-        return datetime.datetime.now() > limit_date.replace(tzinfo=None)
-
+        limit_date = (self.create_date + datetime.timedelta(days=int(self.request.login_profile_time_limit))).date()
+        return datetime.date.today() > limit_date
+        
 class Common(object):
 
     def __init__(self):
@@ -75,8 +82,6 @@ class Common(object):
 
     def is_obsolete_request(self, ses_client, iam_client, request):
         if self.is_valid_email(ses_client, request):
-            if request.force:
-                return True
             login_profile_info = self.find_login_profile_info(iam_client, request)
             if login_profile_info and login_profile_info.is_obsolete():
                 return True
@@ -163,3 +168,16 @@ class Common(object):
             return None
         except iam_client.exceptions.NoSuchEntityException:
             return None
+
+    def find_user_tag(self, iam_client, user_name, tag_key, marker=None):
+        response = None
+        if not marker:
+            response = iam_client.list_user_tags(UserName=user_name)
+        else:
+            response = iam_client.list_user_tags(UserName=user_name, Marker=marker)
+        if 'Tags' in response:
+            tag = next((x for x in response['Tags'] if x['Key'] == tag_key), None)
+            if tag:
+                return tag['Value']
+        if 'IsTruncated' in response and bool(response['IsTruncated']):
+            return find_user_tag(user_name, tag_key, marker=response['Marker'])

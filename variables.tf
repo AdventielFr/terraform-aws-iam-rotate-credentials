@@ -44,6 +44,12 @@ variable "aws_cli_time_limit" {
   default     = 60
 }
 
+variable "aws_account_name" {
+  description ="Name of Aws Account ( use in email sender to user where credentials are obsoletes )"
+  type = string
+  default = "<your aws acccount name>"
+}
+
 variable "tags" {
   description = "The tags of all resources created"
   type        = map
@@ -53,7 +59,7 @@ variable "tags" {
 variable "credentials_sended_by" {
   description = "The sender of renewal credentials emails"
   type        = string
-  default     = "ops team"
+  default     = "<your ops teams>"
 }
 
 variable "kms_ciphertext" {
