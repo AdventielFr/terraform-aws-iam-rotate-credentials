@@ -47,7 +47,7 @@ def find_refresh_credential_request(marker=None):
     if 'Users' in response:
         for item in response['Users']:
             user_name = item['UserName']
-            email = find_user_tag(user_name, 'IamRotateCredentials:Email')
+            email = common.find_user_tag(user_name, 'IamRotateCredentials:Email')
             if email:
                 cli_time_limit = common.find_user_tag(user_name, 'IamRotateCredentials:CliTimeLimit')
                 if not cli_time_limit:
@@ -57,6 +57,7 @@ def find_refresh_credential_request(marker=None):
                     login_profile_time_limit = os.environ.get('AWS_LOGIN_PROFILE_TIME_LIMIT')
                 request = RefreshCredentialRequest(
                     user_name = user_name,
+                    email = common.find_user_tag(user_name, 'IamRotateCredentials:Email')
                     cli_time_limit = int(cli_time_limit),
                     force = False,
                     login_profile_time_limit = int(login_profile_time_limit)

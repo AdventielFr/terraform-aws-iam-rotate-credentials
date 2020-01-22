@@ -54,7 +54,8 @@ def extract_request_from_record(record):
     """extract refresh credential request from record"""
     payload = json.loads(record['body'])
     request = RefreshCredentialRequest(**payload)
-    request.email = common.find_user_tag(request.user_name)
+    if not request.email:
+        request.email = common.find_user_tag(request.user_name,'IamRotateCredentials:Email')
     if not request.email:
         raise ValueError(f"tag IamRotateCredentials:Email not found for user {request.user_name}")
     return request
