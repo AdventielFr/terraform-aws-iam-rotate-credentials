@@ -57,10 +57,10 @@ def find_refresh_credential_request(marker=None):
                     login_profile_time_limit = os.environ.get('AWS_LOGIN_PROFILE_TIME_LIMIT')
                 request = RefreshCredentialRequest(
                     user_name = user_name,
-                    email = common.find_user_tag(user_name, 'IamRotateCredentials:Email')
+                    email = email,
                     cli_time_limit = int(cli_time_limit),
-                    force = False,
-                    login_profile_time_limit = int(login_profile_time_limit)
+                    login_profile_time_limit = int(login_profile_time_limit),
+                    force = False
                 )
                 result.append(request)
     if 'IsTruncated' in response and bool(response['IsTruncated']):
