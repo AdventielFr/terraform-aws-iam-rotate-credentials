@@ -53,6 +53,17 @@ Once the tags is affixed to the user, the email or email domain must be register
 
 ![alt text](_docs/ses2.png)
 
+## I.3 - Force refresh credentials for one user
+
+For force a credential refresh for one user, you can push message in SQS queue. The message must be like this 
+
+```json
+{
+  "user_name": "<iam user_name>",
+  "force": "true"
+}
+```
+
 ## II - Inputs / Outputs
 
 ## Inputs

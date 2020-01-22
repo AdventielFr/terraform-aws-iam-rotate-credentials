@@ -36,20 +36,6 @@ def publish_request(request):
             )
     common.logger.info(f"Sends a credentials renewal request for the user {request.user_name}")
 
-def find_user_tag(user_name, tag_key, marker=None):
-    response = None
-    if not marker:
-        response = iam_client.list_user_tags(UserName=user_name)
-    else:
-        response = iam_client.list_user_tags(UserName=user_name, Marker=marker)
-    if 'Tags' in response:
-        tag = next((x for x in response['Tags']
-                    if x['Key'] == tag_key), None)
-        if tag:
-            return tag['Value']
-    if 'IsTruncated' in response and bool(response['IsTruncated']):
-        return find_user_tag(user_name, tag_key, marker=response['Marker'])
-
 def find_refresh_credential_request(marker=None):
     """find all iam users of account"""
     result = []
@@ -63,16 +49,16 @@ def find_refresh_credential_request(marker=None):
             user_name = item['UserName']
             email = find_user_tag(user_name, 'IamRotateCredentials:Email')
             if email:
-                cli_time_limit = find_user_tag(user_name, 'IamRotateCredentials:CliTimeLimit')
+                cli_time_limit = common.find_user_tag(user_name, 'IamRotateCredentials:CliTimeLimit')
                 if not cli_time_limit:
                     cli_time_limit = os.environ.get('AWS_CLI_TIME_LIMIT')
-                login_profile_time_limit = find_user_tag(user_name, 'IamRotateCredentials:LoginProfileTimeLimit')
+                login_profile_time_limit = common.find_user_tag(user_name, 'IamRotateCredentials:LoginProfileTimeLimit')
                 if not login_profile_time_limit:
                     login_profile_time_limit = os.environ.get('AWS_LOGIN_PROFILE_TIME_LIMIT')
                 request = RefreshCredentialRequest(
                     user_name = user_name,
-                    email = email ,
                     cli_time_limit = int(cli_time_limit),
+                    force = False,
                     login_profile_time_limit = int(login_profile_time_limit)
                 )
                 result.append(request)

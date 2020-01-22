@@ -64,4 +64,5 @@ functions:
       AWS_CLI_TIME_LIMIT: 60
       AWS_SES_EMAIL_FROM: "<your email used to send credentials changes>"
       AWS_SNS_RESULT_ARN: "<your sns topic arn>"
+      AWS_ACCOUNT_NAME: "<your aws account name>"
       

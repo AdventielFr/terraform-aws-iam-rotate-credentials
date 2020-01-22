@@ -45,6 +45,7 @@ resource "aws_lambda_function" "update_iam_credentials_for_user" {
       AWS_SES_EMAIL_FROM                        = var.aws_ses_email_from
       AWS_SNS_RESULT_ARN                        = aws_sns_topic.iam_rotate_credentials_result.arn
       CREDENTIALS_SENDED_BY                     = var.credentials_sended_by
+      AWS_ACCOUNT_NAME                          = var.aws_account_name
     }
   }
 

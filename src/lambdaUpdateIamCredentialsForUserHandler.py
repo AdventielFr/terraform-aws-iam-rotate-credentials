@@ -53,7 +53,10 @@ def main(event, context):
 def extract_request_from_record(record):
     """extract refresh credential request from record"""
     payload = json.loads(record['body'])
-    return RefreshCredentialRequest(**payload)
+    request = RefreshCredentialRequest(**payload)
+    request.email = common.find_user_tag(request.user_name)
+    if not request.email:
+        raise ValueError(f"tag IamRotateCredentials:Email not found for user {request.user_name}")
 
 def update_login_profile(request, login_profile_info):
     """update login profile password"""
@@ -81,7 +84,13 @@ def try_send_email(request, login_profile_info, access_key_infos):
     if not login_profile_info and len(access_key_infos) == 0:
         return
     url = f'https://{account_id}.signin.aws.amazon.com/console'
-    message = f"This email is sent automatically when your credentials become obsolete for account {account_id}.\n"
+    account_info = ""
+    if 'AWS_ACCOUNT_NAME' in os.environ:
+        account_info += os.environ.get('AWS_ACCOUNT_NAME')
+        account_info += ' - '
+    account_info += account_id
+
+    message = f"This email is sent automatically when your credentials become obsolete for account {account_info}.\n"
     message += "\n"
     if login_profile_info:
         message += f'Your new Console Access:\n'
