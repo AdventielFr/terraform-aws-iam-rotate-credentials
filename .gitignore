@@ -8,6 +8,8 @@
 # Jetbrains
 .idea/
 
+.vscode/
+
 # servelesss
 node_modules
 include

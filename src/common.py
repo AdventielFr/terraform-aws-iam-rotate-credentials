@@ -3,6 +3,7 @@ import os
 import logging
 import boto3
 import datetime
+from abc import ABC, abstractmethod
 
 class RefreshCredentialRequest(object):
     def __init__(self, **kwargs):
@@ -20,7 +21,7 @@ class RefreshCredentialRequest(object):
             if not self.login_profile_time_limit:
                 raise ValueError("login_profile_time_limit is required")        
 
-class AuditableInfo(object):
+class AuditableInfo(ABC):
     def __init__(self, create_date, request):
         self.request = request
         self.create_date = create_date
@@ -28,17 +29,24 @@ class AuditableInfo(object):
             raise ValueError("create_date is required")
         if not request:
             raise ValueError("request is required")
+        
+    @abstractmethod
+    def is_obsolete(self):
+        pass
 
-class LoginProfileInfo(AuditableInfo):
+    def _is_obsolete(self, attr_name):
+        if self.request.force:
+            return True
+        limit_date = (self.create_date + datetime.timedelta(days=int(getattr(self,attr_name))).date()
+        return datetime.date.today() > limit_date
+
+ class LoginProfileInfo(AuditableInfo):
     def __init__(self, create_date, request):
         super(LoginProfileInfo, self).__init__(create_date, request)
         self.password = None
-
+    
     def is_obsolete(self):
-        if self.request.force:
-            return True
-        limit_date = (self.create_date + datetime.timedelta(days=int(self.request.login_profile_time_limit))).date()
-        return datetime.date.today() > limit_date
+        return self._is_obsolete(self.request.login_profile_time_limit)
 
 class AccessKeyInfo(AuditableInfo):
     def __init__(self, id, create_date, request):
@@ -47,10 +55,7 @@ class AccessKeyInfo(AuditableInfo):
         self.secret = None
 
     def is_obsolete(self):
-        if self.request.force:
-            return True
-        limit_date = (self.create_date + datetime.timedelta(days=int(self.request.login_profile_time_limit))).date()
-        return datetime.date.today() > limit_date
+        return self._is_obsolete(self.request.cli_time_limit)
         
 class Common(object):
 
@@ -90,17 +95,8 @@ class Common(object):
         else:
             False
 
-    def is_valid_email(self, ses_client, request):
-        regex = '^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$'
-        match = re.match(regex, request.email)
-        if not match:
-            message = f'For user {request.user_name}, {request.email} is not a valid email.'
-            self.logger.warn(message)
-            self.send_message(message,verbosity='WARN')
-            return False
-    
-        # test mail
-        self.logger.info(f'Check AWS SES status for user "{request.user_name}"')
+    def is_known_ses_email_for_user(self, ses_client, request):
+        self.logger.info(f'Check AWS SES email status ("{request.email}") for user "{request.user_name}"')
         response = ses_client.get_identity_verification_attributes(Identities=[request.email])
         status = None
         if request.email in response['VerificationAttributes']:
@@ -113,11 +109,11 @@ class Common(object):
                 message = f'User {request.user_name} with email {request.email} is not validated by AWS SES ( AWS SES email = {request.email}, status = {status} ).'
                 self.logger.warn(message)
                 self.send_message(message,verbosity='WARN')
+        return False
 
-        # test domain
-        domain = match.group(1)
-        response = ses_client.get_identity_verification_attributes(
-            Identities=[match.group(1)])
+    def is_known_ses_domain_for_user(self, ses_client, request, domain):
+        self.logger.info(f'Check AWS SES domain status ("{domain}") for user "{request.user_name}"')
+        response = ses_client.get_identity_verification_attributes(Identities=[domain])
         if domain in response['VerificationAttributes']:
             status = response['VerificationAttributes'][domain][
                 'VerificationStatus']
@@ -128,6 +124,26 @@ class Common(object):
             message = f'User mail {request.user_name} with email {request.email} is not validated by AWS SES ( AWS SES domain = {domain}, status = {status} ).'
             self.logger.warn(message)
             self.send_message(message,verbosity='WARN')
+        return False
+    
+    def is_valid_email(self, ses_client, request):
+        match = re.match(r"^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$", request.email)
+        if not match:
+            message = f'For user {request.user_name}, {request.email} is not a valid email.'
+            self.logger.warn(message)
+            self.send_message(message,verbosity='WARN')
+            return False
+    
+        # test mail
+        is_valid = self.is_known_ses_email_for_user(ses_client, request)
+        if is_valid:
+            return True
+
+        # test domain
+        domain = match.group(1)
+        is_valid = self.is_known_ses_domain_for_user(ses_client, request, domain)
+        if is_valid:
+            return True
 
         message = f'User {request.user_name} with email {request.email} is not validated by AWS SES.'
         self.logger.warn(message)

@@ -34,15 +34,16 @@ def main(event, context):
                 request = extract_request_from_record(record)
                 common.logger.info(f"Process request for user {request.user_name} ...")
                 if common.is_obsolete_request(ses_client, iam_client, request):
-                    obsolete_login_profile_info = common.find_login_profile_info(iam_client, request)
+                    login_profile_info = common.find_login_profile_info(iam_client, request)
                     obsolete_access_key_infos = list(filter(lambda x: x.is_obsolete(),common.find_access_key_infos(iam_client, request)))
-                    # if login profile exist then update password 
-                    if obsolete_login_profile_info:
+                    # if login profile exist and is obsolete then update password 
+                    if login_profile_info and login_profile_info.is_obsolete():
                         update_login_profile(request, obsolete_login_profile_info)
-                    # if exists access keys then re create new access keys 
+                    # if exists access keys and are obsolete then re create new access keys 
                     for obsolete_access_key_info in obsolete_access_key_infos:
                         update_access_key(request, obsolete_access_key_info)
                     try_send_email(request, obsolete_login_profile_info, obsolete_access_key_infos)
+
     except Exception as e:
         common.logger.error(e)
         stack_trace = traceback.format_exc()
