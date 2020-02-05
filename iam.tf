@@ -195,7 +195,11 @@ resource "aws_iam_role" "find_users_to_refresh" {
     {
       "Effect": "Allow",
       "Principal": {
-        "Service": "lambda.amazonaws.com"
+        "Service": [
+          "lambda.amazonaws.com",
+          "events.amazonaws.com",
+          "apigateway.amazonaws.com"
+        ]
       },
       "Action": "sts:AssumeRole"
     }
@@ -215,7 +219,12 @@ resource "aws_iam_role" "update_iam_credentials_for_user" {
     {
       "Effect": "Allow",
       "Principal": {
-        "Service": "lambda.amazonaws.com"
+        "Service": [
+          "lambda.amazonaws.com",
+          "events.amazonaws.com",
+          "apigateway.amazonaws.com",
+          "sqs.amazonaws.com",
+        ]
       },
       "Action": "sts:AssumeRole"
     }

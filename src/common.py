@@ -34,10 +34,10 @@ class AuditableInfo(ABC):
     def is_obsolete(self):
         pass
 
-    def _is_obsolete(self, attr_name):
+    def _is_obsolete(self, delta):
         if self.request.force:
             return True
-        limit_date = (self.create_date + datetime.timedelta(days=int(getattr(self,attr_name))).date()
+        limit_date = (self.create_date + datetime.timedelta(days=delta)).date()
         return datetime.date.today() > limit_date
 
  class LoginProfileInfo(AuditableInfo):
