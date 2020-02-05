@@ -40,7 +40,7 @@ class AuditableInfo(ABC):
         limit_date = (self.create_date + datetime.timedelta(days=delta)).date()
         return datetime.date.today() > limit_date
 
- class LoginProfileInfo(AuditableInfo):
+class LoginProfileInfo(AuditableInfo):
     def __init__(self, create_date, request):
         super(LoginProfileInfo, self).__init__(create_date, request)
         self.password = None
