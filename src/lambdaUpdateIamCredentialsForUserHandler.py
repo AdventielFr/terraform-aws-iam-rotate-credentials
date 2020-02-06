@@ -23,7 +23,7 @@ def create_password():
     pwo.minlen = 16
     pwo.maxlen = 16
     if 'PasswordPolicy' in response:
-        pwo.minlen = password_policy['MinimumPasswordLength']
+        pwo.minlen = reponse['PasswordPolicy']['MinimumPasswordLength']
         pwo.maxlen = pwo.minlen
     pwo.minuchars = 1
     pwo.minlchars = 1
