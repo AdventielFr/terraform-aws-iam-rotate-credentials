@@ -18,20 +18,18 @@ ses_client = boto3.client('ses')
 iam_resource = boto3.resource('iam')
 
 def create_password():
-    response = iam_client.get_account_password_policy()
-    password_len = 16
-    password_src_lower_char = "abcdefghijklmnopqrstuvwxyz"
-    password_src_upper_char = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    password_src_number = "01234567890"
-    password_src_symbol = "!@#$%^&*()_+-=[]|'"
-    password_src = password_src_lower_char + password_src_upper_char + password_src_number + password_src_symbol
+    pwo = PasswordGenerator()
+    pwo.minlen = 16
+    pwo.maxlen = 16
     if 'PasswordPolicy' in response:
-        password_policy = response['PasswordPolicy']
-        if not password_policy['RequireSymbols']:
-            password_src = password_src.replace(password_src_symbol,"")
-        password_len = password_policy['MinimumPasswordLength']
-    return "".join(random.sample(password_src, password_len ))
-
+        pwo.minlen = password_policy['MinimumPasswordLength']
+        pwo.maxlen = pwo.minlen
+    pwo.minuchars = 1
+    pwo.minlchars = 1
+    pwo.minnumbers = 1
+    pwo.minschars = 1
+    return pwo.generate() 
+ 
 def main(event, context):
     """entry point"""
     try:
