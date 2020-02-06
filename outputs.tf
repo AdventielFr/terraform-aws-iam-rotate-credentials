@@ -33,7 +33,3 @@ output "sqs_update_iam_credentials_for_user_dead_letter_id" {
   value       = aws_sqs_queue.update_iam_credentials_for_user_dead_letter.id
 }
 
-output "kms_ciphertext" {
-  description = "The Secret used to encrypt the data"
-  value       = local.kms_ciphertext
-}

@@ -86,7 +86,6 @@ For force a credential refresh for one user, you can push message in SQS queue. 
 
 | Name | Description |
 |------|-------------|
-| kms\_ciphertext | The Secret used to encrypt the data |
 | lambda\_find\_users\_to\_refresh\_arn | The Lambda ARN of Find users to update IAM credentials lambda |
 | lambda\_update\_iam\_credentials\_for\_user\_arn | The Lambda ARN of Update IAM credentials lambda |
 | sns\_iam\_rotate\_credentials\_result\_arn | The SNS result ARN of topic for result IAM rotate Credential lambdas execution |
