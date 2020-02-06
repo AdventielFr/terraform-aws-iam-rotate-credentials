@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import json
 import boto3
 import os
 import traceback
+import random
 
 from password_generator import PasswordGenerator
 from common import Common
@@ -13,18 +17,20 @@ iam_client = boto3.client('iam')
 ses_client = boto3.client('ses')
 iam_resource = boto3.resource('iam')
 
-def create_generator():
-    """create a password generator"""
-    generator = PasswordGenerator()
-    generator.minlen = 16  
-    generator.maxlen = 16  
-    generator.minuchars = 2 
-    generator.minlchars = 2  
-    generator.minnumbers = 2 
-    generator.minschars = 2  
-    return generator
-
-generator = create_generator()
+def create_password():
+    response = iam_client.get_account_password_policy()
+    password_len = 16
+    password_src_lower_char = "abcdefghijklmnopqrstuvwxyz"
+    password_src_upper_char = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    password_src_number = "01234567890"
+    password_src_symbol = "!@#$%^&*()_+-=[]|'"
+    password_src = password_src_lower_char + password_src_upper_char + password_src_number + password_src_symbol
+    if 'PasswordPolicy' in response:
+        password_policy = response['PasswordPolicy']
+        if not password_policy['RequireSymbols']:
+            password_src = password_src.replace(password_src_symbol,"")
+        password_len = password_policy['MinimumPasswordLength']
+    return "".join(random.sample(password_src, password_len ))
 
 def main(event, context):
     """entry point"""
@@ -33,17 +39,24 @@ def main(event, context):
             for record in event['Records']:
                 request = extract_request_from_record(record)
                 common.logger.info(f"Process request for user {request.user_name} ...")
-                if common.is_obsolete_request(ses_client, iam_client, request):
-                    login_profile_info = common.find_login_profile_info(iam_client, request)
-                    obsolete_access_key_infos = list(filter(lambda x: x.is_obsolete(),common.find_access_key_infos(iam_client, request)))
-                    # if login profile exist and is obsolete then update password 
-                    if login_profile_info and login_profile_info.is_obsolete():
-                        update_login_profile(request, obsolete_login_profile_info)
-                    # if exists access keys and are obsolete then re create new access keys 
-                    for obsolete_access_key_info in obsolete_access_key_infos:
-                        update_access_key(request, obsolete_access_key_info)
-                    try_send_email(request, obsolete_login_profile_info, obsolete_access_key_infos)
-
+                email = common.find_user_tag(iam_client, request.user_name, 'IamRotateCredentials:Email')
+                if email:
+                    if common.is_valid_email(ses_client, request.user_name, email):
+                        new_password_login_profile = None
+                        if request.login_profile or request.force:
+                            new_password_login_profile = update_login_profile(request.user_name)
+                        new_access_keys = []
+                        access_key_ids = request.access_key_ids
+                        if request.force:
+                            refresh_access_keys = find_all_access_key_ids(request.user_name)
+                        for access_key_id in access_key_ids:
+                            new_access_key = update_access_key(request.user_name, access_key_id)
+                            new_access_keys.append(new_access_key)
+                        send_email(request.user_name, email, new_password_login_profile, new_access_keys)
+                    else:
+                        raise ValueError(f"Invalid mail for user {request.user_name} ")
+                else:
+                    raise ValueError(f"'IamRotateCredentials:Email' tag not exist for user {request.user_name}")
     except Exception as e:
         common.logger.error(e)
         stack_trace = traceback.format_exc()
@@ -55,37 +68,35 @@ def extract_request_from_record(record):
     """extract refresh credential request from record"""
     payload = json.loads(record['body'])
     request = RefreshCredentialRequest(**payload)
-    if not request.email:
-        request.email = common.find_user_tag(iam_client, request.user_name,'IamRotateCredentials:Email')
-    if not request.email:
-        raise ValueError(f"tag IamRotateCredentials:Email not found for user {request.user_name}")
     return request
 
-def update_login_profile(request, login_profile_info):
+def update_login_profile(user_name):
     """update login profile password"""
-    login_profile_info.password = generator.generate()
-    login_profile = iam_resource.LoginProfile(request.user_name)
-    login_profile.update(Password=login_profile_info.password,
+    new_password = create_password()
+    login_profile = iam_resource.LoginProfile(user_name)
+    login_profile.update(Password=new_password,
                          PasswordResetRequired=with_password_reset_required())
-    common.logger.info(f"New password generated for AWS console Access for user {request.user_name}")
+    common.logger.info(f"New password generated for AWS console Access for user {user_name}")
+    return new_password
 
-def update_access_key(request, access_key_info):
+def update_access_key(user_name, old_access_key):
     """remove and recreate access key """
-    old_id = access_key_info.id
     # delete obsolete access key
-    iam_client.delete_access_key(UserName=request.user_name,AccessKeyId=access_key_info.id)
+    iam_client.delete_access_key(UserName=user_name, AccessKeyId=old_access_key)
+
     # create new access key
     response = iam_client.create_access_key(UserName=request.user_name)
-    access_key_info.id = response['AccessKey']['AccessKeyId']
-    access_key_info.secret = response['AccessKey']['SecretAccessKey']
-    access_key_info.create_date = response['AccessKey']['CreateDate']
-    common.logger.info(f'New Access/Secret Keys generated for AWS CLI for user {request.user_name} ( {old_id} -> {access_key_info.id})')
+    new_access_key = response['AccessKey']['AccessKeyId']
+    new_secret_key = response['AccessKey']['SecretAccessKey']
+    common.logger.info(f'New Access/Secret Keys generated for AWS CLI for user {user_name} ( {old_access_key} -> {new_access_key})')
+    result = {}
+    result["Key"] = new_access_key
+    result["Secret"] = new_secret_key
+    return result
 
-def try_send_email(request, login_profile_info, access_key_infos):
+def send_email(user_name, email, new_password_login_profile, new_access_keys):
     """send email to user by AWS SES"""
     # not no action update then return 
-    if not login_profile_info and len(access_key_infos) == 0:
-        return
     url = f'https://{account_id}.signin.aws.amazon.com/console'
     account_info = ""
     if 'AWS_ACCOUNT_NAME' in os.environ:
@@ -95,27 +106,27 @@ def try_send_email(request, login_profile_info, access_key_infos):
 
     message = f"This email is sent automatically when your credentials become obsolete for account {account_info}.\n"
     message += "\n"
-    if login_profile_info:
+    if new_password_login_profile:
         message += f'Your new Console Access:\n'
         message += f'\tUrl : {url}\n'
-        message += f"\tLogin: {request.user_name}\n"
-        message += f"\tPassword: {login_profile_info.password}\n"
+        message += f"\tLogin: {user_name}\n"
+        message += f"\tPassword: {new_password_login_profile}\n"
         message += "\n"
         if with_password_reset_required():
             message += "For your Console Access, you will need to change your password at the next login.\n"
             message += "\n"
-    if access_key_infos and len(access_key_infos)>0 : 
+    if new_access_keys and len(new_access_keys)>0 : 
         for key in access_key_infos:
             message += 'Your new Command LIne Access:\n'
-            message += f"\tAccess Key: {key.id}\n"
-            message += f"\tSecret Key: {key.secret}\n"
+            message += f'\tAccess Key: {key["Key"]}\n'
+            message += f'\tSecret Key: {key["Secret"]}\n'
     message += "\n"
     if 'CREDENTIALS_SENDED_BY' in os.environ:
         credentials_sended_by = os.environ.get("CREDENTIALS_SENDED_BY")
         message += f"by {credentials_sended_by}.\n"
     ses_client.send_email(
         Source = os.environ.get('AWS_SES_EMAIL_FROM'),
-        Destination = {'ToAddresses': [request.email]},
+        Destination = {'ToAddresses': [email]},
         Message={
             'Subject': {
                 'Data':
@@ -127,7 +138,7 @@ def try_send_email(request, login_profile_info, access_key_infos):
                 }
             }
         })
-    common.logger.info(f'New credentials sended to {request.email} for user {request.user_name}.')
+    common.logger.info(f'New credentials sended to {email} for user {user_name}.')
 
 def with_password_reset_required():
     env = os.environ.get('AWS_LOGIN_PROFILE_PASSWORD_RESET_REQUIRED')
@@ -135,3 +146,19 @@ def with_password_reset_required():
         return True
     return env.lower().strip() in ['true', '1']
 
+
+def find_all_access_key_ids(user_name, marker=None):
+    """find all active and obsolete access_key of user if exists """
+    result = []
+    response = None
+    if not marker:
+        response = iam_client.list_access_keys(UserName=user_name)
+    else:
+        response = iam_client.list_access_keys(UserName=user_name, Marker=marker)
+        if 'AccessKeyMetadata' in response:
+            for item in filter(lambda x: x['Status'] == 'Active', response['AccessKeyMetadata']):
+                result.append(item['AccessKeyId'])
+
+        if 'IsTruncated' in response and bool(response['IsTruncated']):
+            result += find_all_access_keys(request, marker=response['Marker'])
+        return result

@@ -42,6 +42,8 @@ data "aws_iam_policy_document" "find_users_to_refresh" {
     resources = ["*"]
 
     actions = [
+      "iam:GenerateCredentialReport",
+      "iam:GetCredentialReport",
       "iam:GetLoginProfile",
       "iam:GetUser",
       "iam:ListAccessKeys",
