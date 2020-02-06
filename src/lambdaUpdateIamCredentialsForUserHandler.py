@@ -85,7 +85,7 @@ def update_access_key(user_name, old_access_key):
     iam_client.delete_access_key(UserName=user_name, AccessKeyId=old_access_key)
 
     # create new access key
-    response = iam_client.create_access_key(UserName=request.user_name)
+    response = iam_client.create_access_key(UserName=user_name)
     new_access_key = response['AccessKey']['AccessKeyId']
     new_secret_key = response['AccessKey']['SecretAccessKey']
     common.logger.info(f'New Access/Secret Keys generated for AWS CLI for user {user_name} ( {old_access_key} -> {new_access_key})')
