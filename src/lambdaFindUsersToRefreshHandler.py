@@ -1,11 +1,14 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import json
 import boto3
 import traceback
 import os
+import datetime
+import time 
 from common import Common
 from common import RefreshCredentialRequest
-import datetime
-import base64
 
 common = Common()
 account_id = common.get_account_id()
@@ -106,9 +109,9 @@ def find_refresh_credential_request(credential_report, marker=None):
                         )
                         publish_request(request)
                     else:
-                        common.logger.info(f"User {user_name} exclude, reason: The credentials are not obsolete")
+                        common.logger.info(f"User {user_name} excluded, reason: The credentials are not obsolete")
             else:
-                common.logger.info(f"User {user_name} exclude, reason: 'IamRotateCredentials:Email' tag not exist for user")
+                common.logger.info(f"User {user_name} excluded, reason: 'IamRotateCredentials:Email' tag not exist for user")
     if 'IsTruncated' in response and bool(response['IsTruncated']):
         find_refresh_credential_request(iam_client, marker=response['Marker'])
 
@@ -128,5 +131,5 @@ def get_credential_report():
                 credential_report.append(item)
         return credential_report
     else:
-        sleep(2)
+        time.sleep(2)
         return get_credential_report()
