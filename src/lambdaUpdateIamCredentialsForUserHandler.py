@@ -18,6 +18,7 @@ ses_client = boto3.client('ses')
 iam_resource = boto3.resource('iam')
 
 def create_password():
+    response = iam_client.get_account_password_policy()
     pwo = PasswordGenerator()
     pwo.minlen = 16
     pwo.maxlen = 16
