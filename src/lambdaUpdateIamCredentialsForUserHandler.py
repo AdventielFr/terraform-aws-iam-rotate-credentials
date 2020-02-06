@@ -83,7 +83,6 @@ def update_access_key(user_name, old_access_key):
     """remove and recreate access key """
     # delete obsolete access key
     iam_client.delete_access_key(UserName=user_name, AccessKeyId=old_access_key)
-
     # create new access key
     response = iam_client.create_access_key(UserName=user_name)
     new_access_key = response['AccessKey']['AccessKeyId']
@@ -116,7 +115,7 @@ def send_email(user_name, email, new_password_login_profile, new_access_keys):
             message += "For your Console Access, you will need to change your password at the next login.\n"
             message += "\n"
     if new_access_keys and len(new_access_keys)>0 : 
-        for key in access_key_infos:
+        for key in new_access_keys:
             message += 'Your new Command LIne Access:\n'
             message += f'\tAccess Key: {key["Key"]}\n'
             message += f'\tSecret Key: {key["Secret"]}\n'
@@ -145,7 +144,6 @@ def with_password_reset_required():
     if not env:
         return True
     return env.lower().strip() in ['true', '1']
-
 
 def find_all_access_key_ids(user_name, marker=None):
     """find all active and obsolete access_key of user if exists """
