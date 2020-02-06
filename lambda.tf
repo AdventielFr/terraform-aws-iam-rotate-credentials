@@ -39,8 +39,6 @@ resource "aws_lambda_function" "update_iam_credentials_for_user" {
 
   environment {
     variables = {
-      AWS_CLI_TIME_LIMIT                        = var.aws_cli_time_limit
-      AWS_LOGIN_PROFILE_TIME_LIMIT              = var.aws_login_profile_time_limit
       AWS_LOGIN_PROFILE_PASSWORD_RESET_REQUIRED = var.aws_login_profile_password_reset_required
       AWS_SES_EMAIL_FROM                        = var.aws_ses_email_from
       AWS_SNS_RESULT_ARN                        = aws_sns_topic.iam_rotate_credentials_result.arn
