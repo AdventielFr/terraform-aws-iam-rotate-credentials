@@ -25,18 +25,6 @@ data "aws_iam_policy_document" "find_users_to_refresh" {
   }
 
   statement {
-    sid    = "AllowKMSPermissions"
-    effect = "Allow"
-    resources = [
-      aws_kms_key.iam_rotate_credentials.arn
-    ]
-    actions = [
-      "kms:GenerateDataKey",
-      "kms:Decrypt"
-    ]
-  }
-
-  statement {
     sid       = "AllowIAMAccess"
     effect    = "Allow"
     resources = ["*"]
@@ -115,17 +103,6 @@ data "aws_iam_policy_document" "update_iam_credentials_for_user" {
 
     actions = [
       "sns:Publish"
-    ]
-  }
-
-  statement {
-    sid    = "AllowKMSPermissions"
-    effect = "Allow"
-    resources = [
-      aws_kms_key.iam_rotate_credentials.arn
-    ]
-    actions = [
-      "kms:Decrypt"
     ]
   }
 
