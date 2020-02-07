@@ -64,7 +64,7 @@ It is possible to configure per user the maximum duration for console access or 
 |------|-------------|:----:|:----:|
 | IamRotateCredentials:Email | Email of the user who will receive the new credentials | string | yes |
 | IamRotateCredentials:LoginProfileTimeLimit | Maximum duration for an access with login profile (expressed in days). | integer | no |
-| IamRotateCredentials:LoginProfileTPasswordResetRequired | Requires that the console password be changed by the user at the next login.| boolean | no |
+| IamRotateCredentials:LoginProfilePasswordResetRequired | Requires that the console password be changed by the user at the next login.| boolean | no |
 | IamRotateCredentials:CliTimeLimit | Maximum duration for an access with AWS CLI (expressed in days). | integer | no |
 
 ### I.3 - Register Email/Domain on AWS SES
