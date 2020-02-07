@@ -39,11 +39,12 @@ def main(event, context):
                 request = extract_request_from_record(record)
                 common.logger.info(f"Process request for user {request.user_name} ...")
                 email = common.find_user_tag(iam_client, request.user_name, 'IamRotateCredentials:Email')
+                required_reset_password = with_password_reset_required(user_name=request.user_name)
                 if email:
                     if common.is_valid_email(ses_client, request.user_name, email):
                         new_password_login_profile = None
                         if request.login_profile or request.force:
-                            new_password_login_profile = update_login_profile(request.user_name)
+                            new_password_login_profile = update_login_profile(request.user_name, required_reset_password)
                         new_access_keys = []
                         access_key_ids = request.access_key_ids
                         if request.force:
@@ -51,7 +52,7 @@ def main(event, context):
                         for access_key_id in access_key_ids:
                             new_access_key = update_access_key(request.user_name, access_key_id)
                             new_access_keys.append(new_access_key)
-                        send_email(request.user_name, email, new_password_login_profile, new_access_keys)
+                        send_email(request.user_name, email, required_reset_password, new_password_login_profile, new_access_keys)
                     else:
                         raise ValueError(f"Invalid mail for user {request.user_name} ")
                 else:
@@ -69,12 +70,12 @@ def extract_request_from_record(record):
     request = RefreshCredentialRequest(**payload)
     return request
 
-def update_login_profile(user_name):
+def update_login_profile(user_name, required_reset_password):
     """update login profile password"""
     new_password = create_password()
     login_profile = iam_resource.LoginProfile(user_name)
     login_profile.update(Password=new_password,
-                         PasswordResetRequired=with_password_reset_required(user_name))
+                         PasswordResetRequired=required_reset_password)
     common.logger.info(f"New password generated for AWS console Access for user {user_name}")
     return new_password
 
@@ -92,7 +93,7 @@ def update_access_key(user_name, old_access_key):
     result["Secret"] = new_secret_key
     return result
 
-def send_email(user_name, email, new_password_login_profile, new_access_keys):
+def send_email(user_name, email, required_reset_password, new_password_login_profile, new_access_keys):
     """send email to user by AWS SES"""
     # not no action update then return 
     url = f'https://{account_id}.signin.aws.amazon.com/console'
@@ -110,7 +111,7 @@ def send_email(user_name, email, new_password_login_profile, new_access_keys):
         message += f"\tLogin: {user_name}\n"
         message += f"\tPassword: {new_password_login_profile}\n"
         message += "\n"
-        if with_password_reset_required():
+        if required_reset_password:
             message += "For your Console Access, you will need to change your password at the next login.\n"
             message += "\n"
     if new_access_keys and len(new_access_keys)>0 : 

@@ -16,7 +16,7 @@ iam_client = boto3.client('iam')
 ses_client = boto3.client('ses')
 sqs_client = boto3.client('sqs')
 
-DEFAULT_LIMIT = 60
+DEFAULT_LIMIT = 90
 
 def main(event, context):
     """entry point"""
@@ -51,7 +51,7 @@ def find_obsolete_access_key_ids(user_name, marker=None):
             response = iam_client.list_access_keys(UserName=user_name, Marker=marker)
         if 'AccessKeyMetadata' in response:
             for item in filter(lambda x: x['Status'] == 'Active', response['AccessKeyMetadata']):
-                if is_obsolete(item["CreateDate"],common.to_int(cli_time_limit, DEFAULT_LIMIT)):
+                if is_obsolete(item["CreateDate"], common.to_int(cli_time_limit, 90)):
                     result.append(item['AccessKeyId'])
         if 'IsTruncated' in response and bool(response['IsTruncated']):
             result += find_access_keys(request,

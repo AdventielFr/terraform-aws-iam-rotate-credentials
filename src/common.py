@@ -88,9 +88,9 @@ class Common(object):
         self.send_message(message, verbosity='WARN')
         return False
 
-    def to_int(val, default):
-        try
-            return int(val)
+    def to_int(self, value, default):
+        try:
+            return int(value)
         except:
             return default
 
