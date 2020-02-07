@@ -35,13 +35,13 @@ variable "aws_login_profile_password_reset_required" {
 variable "aws_login_profile_time_limit" {
   description = "Maximum duration for an access with login profile (expressed in days)."
   type        = number
-  default     = 60
+  default     = 90
 }
 
 variable "aws_cli_time_limit" {
   description = "Maximum duration for an access with AWS CLI (expressed in days)."
   type        = number
-  default     = 60
+  default     = 90
 }
 
 variable "aws_account_name" {

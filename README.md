@@ -27,7 +27,32 @@ This module create:
 
 - 2 SQS queues: **iam-rotate-credentials-update-iam-credentials-request**, **iam-rotate-credentials-update-iam-credentials-request-dead-letter**
 
-### I.1 - Add tag on user
+### I.1 - Lambda environment variables
+
+#### I.1.1 - Lambda : iam-rotate-credentials-find-users-to-refresh
+
+![alt text](_docs/lambda-1.png)
+
+| Name | Description | type | Required |
+|------|-------------|:----:|:----:|
+| AWS_CLI_TIME_LIMIT | Maximum duration for an access with AWS CLI (expressed in days / default 90 ). | integer | yes |
+| AWS_LOGIN_PROFILE_TIME_LIMIT | Maximum duration for an access with login profile (expressed in days / default 90 ). | integer |  no |
+| AWS_SNS_RESULT_ARN | The SNS result ARN of topic for result IAM rotate Credential lambdas execution | string | yes |
+| AWS_SQS_REQUEST_URL | The ARN of SQS request IAM users credentials | string | yes |
+
+#### I.1.2 - Lambda : iam-rotate-credentials-update-iam-credentials-for-user
+
+![alt text](_docs/lambda-2.png)
+
+| Name | Description | type |  Required |
+|------|-------------|:----:|:----:|
+| AWS_ACCOUNT_NAME | Name of Aws Account ( use in email sender to user where credentials are obsoletes ) | string | no |
+| AWS_LOGIN_PROFILE_PASSWORD_RESET_REQUIRED | Requires that the console password be changed by the user at the next login. | boolean |  yes |
+| AWS_SES_EMAIL_FROM | The SNS result ARN of topic for result IAM rotate Credential lambdas execution | string | yes |
+| AWS_SNS_RESULT_ARN | The SNS result ARN of topic for result IAM rotate Credential lambdas execution | string | yes |
+| CREDENTIALS_SENDED_BY | The SNS result ARN of topic for result IAM rotate Credential lambdas execution | string | yes |
+
+### I.2 - Add tag on user
 
 To identify an AWS user as a user with ID rotation, it is necessary to add a tag to this user. This tag must be **IamRotateCredentials:Email**. It must contain the email that will receive the new credentials.
 
@@ -35,33 +60,35 @@ To identify an AWS user as a user with ID rotation, it is necessary to add a tag
 
 It is possible to configure per user the maximum duration for console access or for command line access
 
-| Name | Description | Required |
-|------|-------------|:----:|
-| IamRotateCredentials:Email | Email of the user who will receive the new credentials | yes |
-| IamRotateCredentials:LoginProfileTimeLimit | Maximum duration for an access with login profile (expressed in days). | no |
-| IamRotateCredentials:CliTimeLimit | Maximum duration for an access with AWS CLI (expressed in days). | no |
+| Name | Description | type |  Required |
+|------|-------------|:----:|:----:|
+| IamRotateCredentials:Email | Email of the user who will receive the new credentials | string | yes |
+| IamRotateCredentials:LoginProfileTimeLimit | Maximum duration for an access with login profile (expressed in days). | integer | no |
+| IamRotateCredentials:LoginProfileTPasswordResetRequired | Requires that the console password be changed by the user at the next login.| boolean | no |
+| IamRotateCredentials:CliTimeLimit | Maximum duration for an access with AWS CLI (expressed in days). | integer | no |
 
-### I.2 - Register Email/Domain on AWS SES
+### I.3 - Register Email/Domain on AWS SES
 
 Once the tags is affixed to the user, the email or email domain must be registered in the AWS SES sevice. Otherwise no mails will be sent from AWS.
 
-### I.2.1 - Register Email
+#### I.3.1 - Register Email
 
 ![alt text](_docs/ses.png)
 
-### I.2.2 - Register Domain
+#### I.3.2 - Register Domain
 
 ![alt text](_docs/ses2.png)
 
-## I.3 - Force refresh credentials for one user
-For force a credential refresh for one user, you can push message in SQS queue. The message must be like this 
+### I.4 - Force refresh credentials for one user
+
+For force a credential refresh for one user, you can push message in SQS queue. The message must be like this
+
 ```json
 {
   "user_name": "<iam user_name>",
   "force": "true"
 }
 ```
-
 
 ## II - Inputs / Outputs
 
@@ -70,9 +97,9 @@ For force a credential refresh for one user, you can push message in SQS queue. 
 | Name | Description | Type | Default |
 |------|-------------|:----:|:-----:|
 | aws\_account\_name | Name of Aws Account ( use in email sender to user where credentials are obsoletes ) | string | "<your aws acccount name>" |
-| aws\_cli\_time\_limit | Maximum duration for an access with AWS CLI (expressed in days). | number | 60 |
+| aws\_cli\_time\_limit | Maximum duration for an access with AWS CLI (expressed in days). | number | 90 |
 | aws\_login\_profile\_password\_reset\_required | Requires that the console password be changed by the user at the next login. | bool | true |
-| aws\_login\_profile\_time\_limit | Maximum duration for an access with login profile (expressed in days). | number | 60 |
+| aws\_login\_profile\_time\_limit | Maximum duration for an access with login profile (expressed in days). | number | 90 |
 | aws\_region | aws region to deploy (only aws region with AWS SES service deployed) | string | n/a |
 | aws\_ses\_email\_from | email used to send emails to users when their credentials change. | string | n/a |
 | cloudwatch\_log\_retention | The cloudwatch log retention ( default 7 days ). | number | 7 |

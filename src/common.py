@@ -88,6 +88,12 @@ class Common(object):
         self.send_message(message, verbosity='WARN')
         return False
 
+    def to_int(val, default):
+        try
+            return int(val)
+        except:
+            return default
+
     def find_user_tag(self, iam_client, user_name, tag_key, marker=None):
         response = None
         if not marker:

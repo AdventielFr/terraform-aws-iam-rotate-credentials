@@ -16,6 +16,8 @@ iam_client = boto3.client('iam')
 ses_client = boto3.client('ses')
 sqs_client = boto3.client('sqs')
 
+DEFAULT_LIMIT = 60
+
 def main(event, context):
     """entry point"""
     try:
@@ -40,8 +42,6 @@ def find_obsolete_access_key_ids(user_name, marker=None):
     cli_time_limit = common.find_user_tag(iam_client, user_name, 'IamRotateCredentials:CliTimeLimit')
     if not cli_time_limit:
         cli_time_limit = os.environ.get('AWS_CLI_TIME_LIMIT')
-    if not cli_time_limit:
-        cli_time_limit = "60"
     result = []
     try:
         response = None
@@ -51,7 +51,7 @@ def find_obsolete_access_key_ids(user_name, marker=None):
             response = iam_client.list_access_keys(UserName=user_name, Marker=marker)
         if 'AccessKeyMetadata' in response:
             for item in filter(lambda x: x['Status'] == 'Active', response['AccessKeyMetadata']):
-                if is_obsolete(item["CreateDate"], int(cli_time_limit)):
+                if is_obsolete(item["CreateDate"],common.to_int(cli_time_limit, DEFAULT_LIMIT)):
                     result.append(item['AccessKeyId'])
         if 'IsTruncated' in response and bool(response['IsTruncated']):
             result += find_access_keys(request,
@@ -64,9 +64,7 @@ def is_obsolete_login_profile(user_name, credential_report):
     """find login profile if exist and if login profile is obsolete"""
     login_profile_time_limit = common.find_user_tag(iam_client, user_name, 'IamRotateCredentials:LoginProfileTimeLimit')
     if not login_profile_time_limit:
-        login_profile_time_limit = int(os.environ.get('AWS_LOGIN_PROFILE_TIME_LIMIT'))
-    if not login_profile_time_limit:
-        login_profile_time_limit = "60"
+        login_profile_time_limit = os.environ.get('AWS_LOGIN_PROFILE_TIME_LIMIT')
     try:
         response = iam_client.get_login_profile(UserName=user_name)
         if 'LoginProfile' in response:
@@ -74,7 +72,7 @@ def is_obsolete_login_profile(user_name, credential_report):
             if credential_report_info:
                 password_last_changed = credential_report_info["password_last_changed"].split('T')[0]
                 password_last_changed = datetime.datetime.strptime(password_last_changed, "%Y-%m-%d")
-                return is_obsolete(password_last_changed, int(login_profile_time_limit))
+                return is_obsolete(password_last_changed, common.to_int(login_profile_time_limit, DEFAULT_LIMIT))
             return False
         return None
     except iam_client.exceptions.NoSuchEntityException:

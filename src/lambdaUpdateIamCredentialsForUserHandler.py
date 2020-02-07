@@ -74,7 +74,7 @@ def update_login_profile(user_name):
     new_password = create_password()
     login_profile = iam_resource.LoginProfile(user_name)
     login_profile.update(Password=new_password,
-                         PasswordResetRequired=with_password_reset_required())
+                         PasswordResetRequired=with_password_reset_required(user_name))
     common.logger.info(f"New password generated for AWS console Access for user {user_name}")
     return new_password
 
@@ -138,11 +138,13 @@ def send_email(user_name, email, new_password_login_profile, new_access_keys):
         })
     common.logger.info(f'New credentials sended to {email} for user {user_name}.')
 
-def with_password_reset_required():
-    env = os.environ.get('AWS_LOGIN_PROFILE_PASSWORD_RESET_REQUIRED')
-    if not env:
+def with_password_reset_required(user_name):
+    with_reset_password = common.find_user_tag(iam_client, user_name, 'IamRotateCredentials:LoginProfilePasswordResetRequired')
+    if not with_reset_password:
+        with_reset_password = os.environ.get('AWS_LOGIN_PROFILE_PASSWORD_RESET_REQUIRED')
+    if not with_reset_password:
         return True
-    return env.lower().strip() in ['true', '1']
+    return with_reset_password.lower().strip() in ['true', '1']
 
 def find_all_access_key_ids(user_name, marker=None):
     """find all active and obsolete access_key of user if exists """

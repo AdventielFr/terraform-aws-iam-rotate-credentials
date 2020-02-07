@@ -3,9 +3,9 @@
 | Name | Description | Type | Default |
 |------|-------------|:----:|:-----:|
 | aws\_account\_name | Name of Aws Account ( use in email sender to user where credentials are obsoletes ) | string | "<your aws acccount name>" |
-| aws\_cli\_time\_limit | Maximum duration for an access with AWS CLI (expressed in days). | number | 60 |
+| aws\_cli\_time\_limit | Maximum duration for an access with AWS CLI (expressed in days). | number | 90 |
 | aws\_login\_profile\_password\_reset\_required | Requires that the console password be changed by the user at the next login. | bool | true |
-| aws\_login\_profile\_time\_limit | Maximum duration for an access with login profile (expressed in days). | number | 60 |
+| aws\_login\_profile\_time\_limit | Maximum duration for an access with login profile (expressed in days). | number | 90 |
 | aws\_region | aws region to deploy (only aws region with AWS SES service deployed) | string | n/a |
 | aws\_ses\_email\_from | email used to send emails to users when their credentials change. | string | n/a |
 | cloudwatch\_log\_retention | The cloudwatch log retention ( default 7 days ). | number | 7 |
