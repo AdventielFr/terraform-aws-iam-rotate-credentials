@@ -127,7 +127,7 @@ For force a credential refresh for one user, you can push message in SQS queue. 
 ````shell
 module "iam_rotate_credentials"
 {
-  source = "git::https://github.com/AdventielFr/terraform-aws-iam-rotate-credentials.git?ref=1.0.0"
+  source = "git::https://github.com/AdventielFr/terraform-aws-iam-rotate-credentials.git?ref=1.1.0"
   
   aws_region                                = "eu-west-1"
   cloudwatch_log_retention                  = 10
