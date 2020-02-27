@@ -7,6 +7,6 @@
     "serverless-iam-roles-per-function": "^2.0.2",
     "serverless-plugin-log-retention": "^2.0.0",
     "serverless-pseudo-parameters": "^2.5.0",
-    "serverless-python-requirements": "^5.0.1"
+    "serverless-python-requirements": "^5.1.0"
   }
 }

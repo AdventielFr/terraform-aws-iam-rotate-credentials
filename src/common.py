@@ -12,6 +12,7 @@ class RefreshCredentialRequest(object):
         self.user_name = None
         self.force = False
         self.access_key_ids = []
+        self.cli_access = False
         self.login_profile = False
         self.__dict__.update(kwargs)
         if not self.user_name:
@@ -59,9 +60,15 @@ class Common(object):
         if domain in response['VerificationAttributes']:
             status = response['VerificationAttributes'][domain][
                 'VerificationStatus']
-        if status == 'Success':
-            self.logger.info(f'User {user_name} is validated by AWS SES ( AWS SES domain = {domain}, status = {status} ).')
-            return True
+            if status == 'Success':
+                self.logger.info(f'User {user_name} is validated by AWS SES ( AWS SES domain = {domain}, status = {status} ).')
+                return True
+            else:
+                self.logger.info(f'User {user_name} is not validated by AWS SES ( AWS SES domain = {domain}, status = {status} ).')
+                return False
+        else:
+            self.logger.warn(f'User {user_name} is no validated by AWS SES ( AWS SES domain = {domain}, reason: domain not found ).')
+            return False
         return False
     
     def is_valid_email(self, ses_client, user_name, email):
@@ -106,3 +113,9 @@ class Common(object):
                 return tag['Value']
         if 'IsTruncated' in response and bool(response['IsTruncated']):
             return find_user_tag(user_name, tag_key, marker=response['Marker'])
+
+    def consume_user_tag(self, iam_client, user_name, tag_key, marker=None):
+        val = self.find_user_tag(iam_client,user_name,tag_key)
+        if val:
+            iam_client.untag_user(UserName = user_name, TagKeys=[tag_key])
+        return val

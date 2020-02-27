@@ -36,7 +36,8 @@ data "aws_iam_policy_document" "find_users_to_refresh" {
       "iam:GetUser",
       "iam:ListAccessKeys",
       "iam:ListUsers",
-      "iam:ListUserTags"
+      "iam:ListUserTags",
+      "iam:UnTagUser"
     ]
   }
 

@@ -18,18 +18,8 @@ ses_client = boto3.client('ses')
 iam_resource = boto3.resource('iam')
 
 def create_password():
-    response = iam_client.get_account_password_policy()
     pwo = PasswordGenerator()
-    pwo.minlen = 16
-    pwo.maxlen = 16
-    if 'PasswordPolicy' in response:
-        pwo.minlen = response['PasswordPolicy']['MinimumPasswordLength']
-        pwo.maxlen = pwo.minlen
-    pwo.minuchars = 1
-    pwo.minlchars = 1
-    pwo.minnumbers = 1
-    pwo.minschars = 1
-    return pwo.generate() 
+    return pwo.shuffle_password('0123456789azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN!@#$%^&*()_+-=[]{}|\'', 16)
  
 def main(event, context):
     """entry point"""
@@ -48,10 +38,11 @@ def main(event, context):
                         new_access_keys = []
                         access_key_ids = request.access_key_ids
                         if request.force:
-                            refresh_access_keys = find_all_access_key_ids(request.user_name)
-                        for access_key_id in access_key_ids:
-                            new_access_key = update_access_key(request.user_name, access_key_id)
-                            new_access_keys.append(new_access_key)
+                            access_key_ids = find_all_access_key_ids(request.user_name)
+                        if access_key_ids:
+                            for access_key_id in access_key_ids:
+                                new_access_key = update_access_key(request.user_name, access_key_id)
+                                new_access_keys.append(new_access_key)
                         send_email(request.user_name, email, required_reset_password, new_password_login_profile, new_access_keys)
                     else:
                         raise ValueError(f"Invalid mail for user {request.user_name} ")
@@ -63,6 +54,7 @@ def main(event, context):
         common.logger.error(stack_trace)
         common.send_message(
             f"Fail to rotate AWS iam credential {account_id}, reason : {e}")
+        raise
 
 def extract_request_from_record(record):
     """extract refresh credential request from record"""
@@ -83,7 +75,6 @@ def update_access_key(user_name, old_access_key):
     """remove and recreate access key """
     # delete obsolete access key
     iam_client.delete_access_key(UserName=user_name, AccessKeyId=old_access_key)
-    # create new access key
     response = iam_client.create_access_key(UserName=user_name)
     new_access_key = response['AccessKey']['AccessKeyId']
     new_secret_key = response['AccessKey']['SecretAccessKey']
@@ -91,7 +82,8 @@ def update_access_key(user_name, old_access_key):
     result = {}
     result["Key"] = new_access_key
     result["Secret"] = new_secret_key
-    return result
+    return result   
+
 
 def send_email(user_name, email, required_reset_password, new_password_login_profile, new_access_keys):
     """send email to user by AWS SES"""
@@ -117,6 +109,7 @@ def send_email(user_name, email, required_reset_password, new_password_login_pro
     if new_access_keys and len(new_access_keys)>0 : 
         for key in new_access_keys:
             message += 'Your new Command LIne Access:\n'
+            message += f'\tUser: {user_name}\n'
             message += f'\tAccess Key: {key["Key"]}\n'
             message += f'\tSecret Key: {key["Secret"]}\n'
     message += "\n"
@@ -155,10 +148,10 @@ def find_all_access_key_ids(user_name, marker=None):
         response = iam_client.list_access_keys(UserName=user_name)
     else:
         response = iam_client.list_access_keys(UserName=user_name, Marker=marker)
-        if 'AccessKeyMetadata' in response:
-            for item in filter(lambda x: x['Status'] == 'Active', response['AccessKeyMetadata']):
-                result.append(item['AccessKeyId'])
+    if 'AccessKeyMetadata' in response:
+        for item in filter(lambda x: x['Status'] == 'Active', response['AccessKeyMetadata']):
+            result.append(item['AccessKeyId'])
 
-        if 'IsTruncated' in response and bool(response['IsTruncated']):
-            result += find_all_access_keys(request, marker=response['Marker'])
-        return result
+    if 'IsTruncated' in response and bool(response['IsTruncated']):
+        result += find_all_access_keys(request, marker=response['Marker'])
+    return result

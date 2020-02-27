@@ -29,6 +29,7 @@ def main(event, context):
         common.logger.error(stack_trace)
         common.send_message(
             f"Fail to rotate AWS iam credential {account_id}, reason : {e}", verbosity='ERROR')
+        raise
 
 def publish_request(request):
     sqs_client.send_message(
@@ -96,18 +97,29 @@ def find_refresh_credential_request(credential_report, marker=None):
             email = common.find_user_tag(iam_client, user_name, 'IamRotateCredentials:Email')
             if email:
                 if common.is_valid_email(ses_client, user_name, email):
-                    refresh_login_profile = is_obsolete_login_profile(user_name, credential_report)
-                    refresh_access_keys = find_obsolete_access_key_ids(user_name)
-                    if refresh_login_profile or len(refresh_access_keys)>0:
-                        request = RefreshCredentialRequest(
-                            user_name = user_name,
-                            login_profile = refresh_login_profile,
-                            access_key_ids = refresh_access_keys,
-                            force = False
-                        )
+                    request = None
+                    forceRefresh = common.consume_user_tag(iam_client,user_name,"IamRotateCredentials:ForceRefresh")
+                    common.logger.info(f"IamRotateCredentials:ForceRefresh : {forceRefresh}")
+                    if forceRefresh:
+                        if bool(forceRefresh):
+                            request = RefreshCredentialRequest(user_name = user_name, force = True)
+                            common.logger.info(f"User {user_name} force to refresh , reason: IamRotateCredentials:ForceRefresh tag found")
+                    else:    
+                        refresh_login_profile = is_obsolete_login_profile(user_name, credential_report)
+                        refresh_access_keys = find_obsolete_access_key_ids(user_name)
+                        if refresh_login_profile or len(refresh_access_keys)>0:
+                            request = RefreshCredentialRequest(
+                                user_name = user_name,
+                                login_profile = refresh_login_profile,
+                                access_key_ids = refresh_access_keys,
+                                force = False
+                            )
+                            
+                        else:
+                            common.logger.info(f"User {user_name} excluded, reason: The credentials are not obsolete")
+                    if request:
                         publish_request(request)
-                    else:
-                        common.logger.info(f"User {user_name} excluded, reason: The credentials are not obsolete")
+                
             else:
                 common.logger.info(f"User {user_name} excluded, reason: 'IamRotateCredentials:Email' tag not exist for user")
     if 'IsTruncated' in response and bool(response['IsTruncated']):
