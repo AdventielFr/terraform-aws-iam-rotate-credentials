@@ -33,7 +33,7 @@ def main(event, context):
                 if email:
                     if common.is_valid_email(ses_client, request.user_name, email):
                         new_password_login_profile = None
-                        if request.login_profile or request.force:
+                        if request.login_profile or ( request.force and exist_login_profile(request.user_name)):
                             new_password_login_profile = update_login_profile(request.user_name, required_reset_password)
                         new_access_keys = []
                         access_key_ids = request.access_key_ids
@@ -61,6 +61,16 @@ def extract_request_from_record(record):
     payload = json.loads(record['body'])
     request = RefreshCredentialRequest(**payload)
     return request
+
+def exist_login_profile(user_name):
+    try:
+        response = iam_client.get_login_profile( UserName=user_name)
+        return 'LoginProfile' in response
+    except iam_client.exceptions.NoSuchEntityException as e:
+        return False
+    else:
+        raise
+
 
 def update_login_profile(user_name, required_reset_password):
     """update login profile password"""
